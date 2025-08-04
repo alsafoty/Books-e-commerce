@@ -20,31 +20,46 @@ enum Role {
   ADMIN
 }
 
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
 model User {
-  id        Int        @id @default(autoincrement())
+  id        String     @id @default(uuid())
   firstName String
   lastName  String
   email     String     @unique
+  username  String     @unique
   password  String
   mobile    String
   role      Role       @default(CLIENT)
+  isActive  Boolean    @default(true)
   addresses Address[]
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
   wishlist  Wishlist[]
   Order     Order[]
-  Cart      Cart[]
+  Cart      Cart?
+
+  // Optional fields for password reset functionality
+  passwordResetToken String?   @unique
+  passwordResetAt    DateTime?
+  passwordResetable  Boolean?  @default(false)
 }
 
 model Address {
   id           String   @id @default(uuid())
-  userId       Int
+  userId       String
   addressLine1 String
   addressLine2 String
   city         String
   state        String
   zip          String
-  User         User     @relation(fields: [userId], references: [id])
+  User         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
@@ -61,17 +76,16 @@ model Category {
 model Product {
   id            Int            @id @default(autoincrement())
   name          String
-  description   String?
+  description   String
   price         Float
   stock         Int            @default(0)
   categoryId    Int
-  Category      Category       @relation(fields: [categoryId], references: [id])
+  Category      Category       @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   ProductImages ProductImage[]
   wishlist      Wishlist[]
   OrderItem     OrderItem[]
-  Cart          Cart[]
   CartItem      CartItem[]
 }
 
@@ -79,27 +93,29 @@ model ProductImage {
   id        String   @id @default(uuid())
   productId Int
   url       String
-  Product   Product  @relation(fields: [productId], references: [id])
+  Product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model Wishlist {
   id        String   @id @default(uuid())
-  userId    Int
+  userId    String
   productId Int
-  User      User     @relation(fields: [userId], references: [id])
-  Product   Product  @relation(fields: [productId], references: [id])
+  User      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([userId, productId])
 }
 
 model Order {
   id          String      @id @default(uuid())
-  userId      Int
+  userId      String
   totalAmount Float
-  status      String      @default("PENDING")
-  User        User        @relation(fields: [userId], references: [id])
+  status      OrderStatus @default(PENDING)
+  User        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   OrderItem   OrderItem[]
@@ -111,19 +127,16 @@ model OrderItem {
   productId Int
   quantity  Int      @default(1)
   price     Float
-  Order     Order    @relation(fields: [orderId], references: [id])
-  Product   Product  @relation(fields: [productId], references: [id])
+  Order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  Product   Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model Cart {
   id        String     @id @default(uuid())
-  userId    Int
-  productId Int
-  quantity  Int        @default(1)
-  User      User       @relation(fields: [userId], references: [id])
-  Product   Product    @relation(fields: [productId], references: [id])
+  userId    String     @unique
+  User      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
   CartItem  CartItem[]
@@ -134,8 +147,10 @@ model CartItem {
   cartId    String
   productId Int
   quantity  Int      @default(1)
-  Cart      Cart     @relation(fields: [cartId], references: [id])
-  Product   Product  @relation(fields: [productId], references: [id])
+  Cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  Product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([cartId, productId])
 }
