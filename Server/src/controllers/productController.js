@@ -1,4 +1,6 @@
+const { constants } = require("crypto");
 const { PrismaClient } = require("../../generated/prisma/client");
+const { contains } = require("validator");
 
 const prisma = new PrismaClient();
 
@@ -174,6 +176,91 @@ const getProductByPage = async (req, res) => {
     res.status(200).json(pageProducts);
   } catch (error) {
     return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// Get filtered products by search input
+const getFilteredProducts = async (req, res) => {
+  try {
+    const input = req.params;
+
+    if (!input || input.trim() === "") {
+      return res.status(400).json({ error: "Search input is required" });
+    }
+
+    const searchTerm = input.trim();
+
+    const filteredProducts = await prisma.product.findMany({
+      include: {
+        Category: true,
+        ProductImages: true,
+      },
+      where: {
+        OR: [
+          {
+            name: {
+              contains: searchTerm,
+              mode: "insensitive", // Case-insensitive search
+            },
+          },
+          {
+            description: {
+              contains: searchTerm,
+              mode: "insensitive", // Case-insensitive search
+            },
+          },
+        ],
+      },
+    });
+
+    res.status(200).json({
+      filteredProducts,
+    });
+  } catch (error) {
+    console.error("Get filtered products error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// Get sorted products
+const getSortedProducts = async (req, res) => {
+  try {
+    const { sortBy = "createdAt", order = "desc" } = req.query;
+
+    // Validate sortBy parameter
+    const validSortFields = ["name", "price", "createdAt", "stock"];
+    if (!validSortFields.includes(sortBy)) {
+      return res.status(400).json({
+        error: `Invalid sortBy field. Valid options: ${validSortFields.join(
+          ", "
+        )}`,
+      });
+    }
+
+    // Validate order parameter
+    const validOrders = ["asc", "desc"];
+    if (!validOrders.includes(order)) {
+      return res.status(400).json({
+        error: `Invalid order. Valid options: ${validOrders.join(", ")}`,
+      });
+    }
+
+    const sortedProducts = await prisma.product.findMany({
+      include: {
+        Category: true,
+        ProductImages: true,
+      },
+      orderBy: {
+        [sortBy]: order,
+      },
+    });
+
+    res.status(200).json({
+      products: sortedProducts,
+    });
+  } catch (error) {
+    console.error("Get sorted products error:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
@@ -385,6 +472,8 @@ module.exports = {
   createProduct,
   createGroupOfProducts,
   getProductByPage,
+  getFilteredProducts,
+  getSortedProducts,
   getAllProducts,
   getProductById,
   updateProductById,

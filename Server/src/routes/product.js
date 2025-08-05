@@ -6,6 +6,8 @@ const {
   createProduct,
   createGroupOfProducts,
   getProductByPage,
+  getFilteredProducts,
+  getSortedProducts,
   getAllProducts,
   getProductById,
   updateProductById,
@@ -28,6 +30,12 @@ router.get("/", verifyToken, getAllProducts);
 
 // Get a Products by page (for pagination)
 router.get("/page/:page", verifyToken, getProductByPage);
+
+//Get all products for some search
+router.get("/search", verifyToken, getFilteredProducts);
+
+//Get sorted products
+router.get("/sorted", verifyToken, getSortedProducts);
 
 // Get a Product by ID
 router.get("/:id", verifyToken, getProductById);
