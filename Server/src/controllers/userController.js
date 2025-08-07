@@ -78,7 +78,7 @@ const loginUser = async (req, res) => {
     }
 
     // Generate JWT token
-    const token = jwt.sign({ username: user.username }, "secret", {
+    const token = jwt.sign({ userId: user.id }, "secret", {
       expiresIn: "7d",
     });
     res.status(200).json({ token: token, role: user.role, id: user.id });
@@ -88,7 +88,7 @@ const loginUser = async (req, res) => {
 };
 
 // Get all users
-const getAllUsers = (req, res) => {
+const getAllUsers = async (req, res) => {
   prisma.user
     .findMany()
     .then((result) => {
@@ -188,6 +188,16 @@ const passwordReset = async (req, res) => {
     // let token = user.passwordResetToken;
     // if (!token) {
     token = crypto.randomInt(100000, 999999);
+
+    // }
+
+    const otp = `${token}`;
+    try {
+      sendEmail(user.email, "Password reset", otp);
+    } catch (error) {
+      return res.send("An error occured");
+    }
+    token = bcrypt.hashSync(token.toString(), 10);
     await prisma.user.update({
       where: {
         id: user.id,
@@ -198,14 +208,6 @@ const passwordReset = async (req, res) => {
         passwordResetable: false,
       },
     });
-    // }
-
-    const otp = `${token}`;
-    try {
-      sendEmail(user.email, "Password reset", otp);
-    } catch (error) {
-      return res.send("An error occured");
-    }
     res.send("OTP sent to your email account");
   } catch (error) {
     res.send("An error occured");

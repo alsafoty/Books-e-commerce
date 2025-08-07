@@ -1,4 +1,4 @@
-to initiate prisma : 
+to initiate prisma :
 
 npx prisma init --datasource-provider postgresql
 
@@ -11,7 +11,7 @@ creating migration files:
 npx prisma migrate dev --name init --create-only
 
 deployment:
-npx prisma migrate deploy 
+npx prisma migrate deploy
 
 Requiring
 const {PrismaClient} = require("@prisma/client");

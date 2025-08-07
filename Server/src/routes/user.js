@@ -3,6 +3,7 @@ const router = express.Router();
 const { verifyOTP } = require("../middleware/otp");
 const { verifyToken } = require("../middleware/auth");
 const { verifyPass } = require("../middleware/passreset");
+const { roleCheck } = require("../middleware/RBAC");
 const {
   registerUser,
   loginUser,
@@ -24,7 +25,7 @@ router.post("/Register", registerUser);
 router.post("/login", loginUser);
 
 // Get all users
-router.get("/", verifyToken, getAllUsers);
+router.get("/", verifyToken, roleCheck, getAllUsers);
 
 // Get a user by ID
 router.get("/:id", verifyToken, getUserById);

@@ -45,7 +45,7 @@ const getCategoryById = async (req, res) => {
     .findUnique({
       where: { id: id },
       include: {
-        Product: true, // Include related products
+        Product: true,
       },
     })
     .then((result) => {

@@ -1,13 +1,13 @@
 const express = require("express");
 const router = express.Router();
 const { verifyToken } = require("../middleware/auth");
+const { upload } = require("../middleware/imageUpload");
+const { roleCheck } = require("../middleware/RBAC");
 
 const {
   createProduct,
   createGroupOfProducts,
-  getProductByPage,
-  getFilteredProducts,
-  getSortedProducts,
+  getProductsWithOptions,
   getAllProducts,
   getProductById,
   updateProductById,
@@ -20,22 +20,22 @@ const {
 router.use(express.json());
 
 // Create a product
-router.post("/", verifyToken, createProduct);
+router.post("/", verifyToken, roleCheck, upload.any(), createProduct);
 
-// Create a group of product
-router.post("/group", verifyToken, createGroupOfProducts);
+// Create a group of products
+router.post(
+  "/group",
+  verifyToken,
+  roleCheck,
+  upload.any(),
+  createGroupOfProducts
+);
 
 // Get all Products
 router.get("/", verifyToken, getAllProducts);
 
-// Get a Products by page (for pagination)
-router.get("/page/:page", verifyToken, getProductByPage);
-
-//Get all products for some search
-router.get("/search", verifyToken, getFilteredProducts);
-
-//Get sorted products
-router.get("/sorted", verifyToken, getSortedProducts);
+// Get products with pagination, filtering, and sorting
+router.get("/browse", verifyToken, getProductsWithOptions);
 
 // Get a Product by ID
 router.get("/:id", verifyToken, getProductById);
@@ -44,15 +44,21 @@ router.get("/:id", verifyToken, getProductById);
 router.get("/:productId/images", verifyToken, getProductImages);
 
 // Add images to existing product
-router.post("/:productId/images", verifyToken, addProductImages);
+router.post(
+  "/:productId/images",
+  verifyToken,
+  roleCheck,
+  upload.any(),
+  addProductImages
+);
 
 // Delete product image
-router.delete("/images/:imageId", verifyToken, deleteProductImage);
+router.delete("/images/:imageId", verifyToken, roleCheck, deleteProductImage);
 
-// Update a Product by ID
-router.put("/:id", verifyToken, updateProductById);
+// Update a Product by ID (with optional image upload)
+router.put("/:id", verifyToken, roleCheck, upload.any(), updateProductById);
 
 // Delete a Product by ID
-router.delete("/:id", verifyToken, deleteProductById);
+router.delete("/:id", verifyToken, roleCheck, deleteProductById);
 
 module.exports = router;

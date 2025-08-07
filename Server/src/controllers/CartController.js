@@ -258,7 +258,6 @@ const updateCartItem = async (req, res) => {
       return res.status(400).json({ error: "Quantity must be greater than 0" });
     }
 
-    // Get cart item with product info
     const cartItem = await prisma.cartItem.findUnique({
       where: { id: cartItemId },
       include: {
@@ -313,7 +312,7 @@ const removeItemFromCart = async (req, res) => {
   }
 };
 
-// Clear all items from cart
+// Clear all items from cart ✅
 const clearCart = async (req, res) => {
   try {
     const { cartId } = req.params;
@@ -400,7 +399,6 @@ const deleteCartById = async (req, res) => {
       return res.status(404).json({ error: "Cart not found" });
     }
 
-    // Due to cascade deletion, cart items will be automatically deleted
     await prisma.cart.delete({
       where: { id: id },
     });

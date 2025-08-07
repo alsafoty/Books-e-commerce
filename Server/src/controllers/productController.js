@@ -1,13 +1,18 @@
-const { constants } = require("crypto");
+const { parse } = require("path");
 const { PrismaClient } = require("../../generated/prisma/client");
-const { contains } = require("validator");
+const {
+  uploadMultipleFiles,
+  deleteFile,
+  extractPublicIdFromUrl,
+} = require("../middleware/imageUpload");
 
 const prisma = new PrismaClient();
 
-// Create a product
+// Create a product with file upload
 const createProduct = async (req, res) => {
   try {
-    const { name, description, price, stock, categoryId, images } = req.body;
+    const { name, description, price, stock, categoryId } = req.body;
+    const files = req.files || [];
 
     if (!name || !description || !price || !categoryId) {
       return res.status(400).json({
@@ -41,11 +46,27 @@ const createProduct = async (req, res) => {
       },
     });
 
-    // Create product images if provided
-    if (images && Array.isArray(images) && images.length > 0) {
-      const imageData = images.map((imageUrl) => ({
+    // Upload images to Google Drive if files are provided
+    let uploadedImageUrls = [];
+    if (files.length > 0) {
+      try {
+        uploadedImageUrls = await uploadMultipleFiles(files);
+        console.log(
+          `Uploaded ${uploadedImageUrls.length} images for product ${newProduct.id}`
+        );
+      } catch (uploadError) {
+        console.error("Error uploading images:", uploadError);
+        return res.status(500).json({
+          error: "Failed to upload images. Please try again later.",
+        });
+      }
+    }
+
+    // Create product images records if uploads were successful
+    if (uploadedImageUrls.length > 0) {
+      const imageData = uploadedImageUrls.map((url) => ({
         productId: newProduct.id,
-        url: imageUrl,
+        url: url,
       }));
 
       await prisma.productImage.createMany({
@@ -65,6 +86,7 @@ const createProduct = async (req, res) => {
     res.status(201).json({
       message: "Product created successfully",
       product: result,
+      uploadedImages: uploadedImageUrls.length,
     });
   } catch (error) {
     console.error("Product creation error:", error);
@@ -72,26 +94,40 @@ const createProduct = async (req, res) => {
   }
 };
 
-// Create multiple products
+// Create multiple products with file upload
 const createGroupOfProducts = async (req, res) => {
   try {
-    if (!Array.isArray(req.body)) {
+    const files = req.files || [];
+
+    // Parse products data from form data
+    const productsData = req.body.products
+      ? JSON.parse(req.body.products)
+      : req.body;
+
+    if (!Array.isArray(productsData)) {
       return res
         .status(400)
         .json({ error: "Request body must be an array of products" });
     }
 
-    if (req.body.length === 0) {
+    if (productsData.length === 0) {
       return res.status(400).json({ error: "Array cannot be empty" });
     }
 
     const results = [];
     const errors = [];
+    let fileIndex = 0;
 
-    for (let i = 0; i < req.body.length; i++) {
+    for (let i = 0; i < productsData.length; i++) {
       try {
-        const { name, description, price, stock, categoryId, images } =
-          req.body[i];
+        const {
+          name,
+          description,
+          price,
+          stock,
+          categoryId,
+          imageCount = 0,
+        } = productsData[i];
 
         if (!name || !description || !price || !categoryId) {
           errors.push(
@@ -123,11 +159,34 @@ const createGroupOfProducts = async (req, res) => {
           },
         });
 
-        // Create product images if provided
-        if (images && Array.isArray(images) && images.length > 0) {
-          const imageData = images.map((imageUrl) => ({
+        // Handle file uploads for this product
+        let uploadedImageUrls = [];
+        const productFiles = files.slice(
+          fileIndex,
+          fileIndex + parseInt(imageCount)
+        );
+        fileIndex += parseInt(imageCount);
+
+        if (productFiles.length > 0) {
+          try {
+            uploadedImageUrls = await uploadMultipleFiles(productFiles);
+            console.log(
+              `Uploaded ${uploadedImageUrls.length} images for product ${newProduct.id}`
+            );
+          } catch (uploadError) {
+            console.error(
+              `Error uploading images for product ${i + 1}:`,
+              uploadError
+            );
+            // Continue without images if upload fails
+          }
+        }
+
+        // Create product images if uploads were successful
+        if (uploadedImageUrls.length > 0) {
+          const imageData = uploadedImageUrls.map((url) => ({
             productId: newProduct.id,
-            url: imageUrl,
+            url: url,
           }));
 
           await prisma.productImage.createMany({
@@ -135,7 +194,10 @@ const createGroupOfProducts = async (req, res) => {
           });
         }
 
-        results.push(newProduct);
+        results.push({
+          ...newProduct,
+          uploadedImages: uploadedImageUrls.length,
+        });
       } catch (error) {
         errors.push(`Product ${i + 1}: ${error.message}`);
       }
@@ -153,81 +215,32 @@ const createGroupOfProducts = async (req, res) => {
   }
 };
 
-const getProductByPage = async (req, res) => {
+// Get products with pagination, filtering, and sorting
+const getProductsWithOptions = async (req, res) => {
   try {
-    const page = parseInt(req.params.page);
+    const {
+      page = 1,
+      limit = 16,
+      searchTerm,
+      sortBy = "createdAt",
+      order = "desc",
+      categoryId,
+    } = req.query;
 
-    if (isNaN(page) || page < 1) {
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+
+    if (isNaN(pageNum) || pageNum < 1) {
       return res.status(400).json({ error: "Invalid page number" });
     }
 
-    const pageProducts = await prisma.product.findMany({
-      take: 16,
-      skip: 16 * (page - 1),
-      include: {
-        Category: true,
-        ProductImages: true,
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
-
-    res.status(200).json(pageProducts);
-  } catch (error) {
-    return res.status(500).json({ error: "Internal server error" });
-  }
-};
-
-// Get filtered products by search input
-const getFilteredProducts = async (req, res) => {
-  try {
-    const input = req.params;
-
-    if (!input || input.trim() === "") {
-      return res.status(400).json({ error: "Search input is required" });
+    const allowedLimits = [16, 25, 50];
+    if (!allowedLimits.includes(limitNum)) {
+      return res.status(400).json({
+        error: `Invalid limit. Allowed values: ${allowedLimits.join(", ")}`,
+      });
     }
 
-    const searchTerm = input.trim();
-
-    const filteredProducts = await prisma.product.findMany({
-      include: {
-        Category: true,
-        ProductImages: true,
-      },
-      where: {
-        OR: [
-          {
-            name: {
-              contains: searchTerm,
-              mode: "insensitive", // Case-insensitive search
-            },
-          },
-          {
-            description: {
-              contains: searchTerm,
-              mode: "insensitive", // Case-insensitive search
-            },
-          },
-        ],
-      },
-    });
-
-    res.status(200).json({
-      filteredProducts,
-    });
-  } catch (error) {
-    console.error("Get filtered products error:", error);
-    res.status(500).json({ error: "Internal server error" });
-  }
-};
-
-// Get sorted products
-const getSortedProducts = async (req, res) => {
-  try {
-    const { sortBy = "createdAt", order = "desc" } = req.query;
-
-    // Validate sortBy parameter
     const validSortFields = ["name", "price", "createdAt", "stock"];
     if (!validSortFields.includes(sortBy)) {
       return res.status(400).json({
@@ -237,7 +250,6 @@ const getSortedProducts = async (req, res) => {
       });
     }
 
-    // Validate order parameter
     const validOrders = ["asc", "desc"];
     if (!validOrders.includes(order)) {
       return res.status(400).json({
@@ -245,7 +257,39 @@ const getSortedProducts = async (req, res) => {
       });
     }
 
-    const sortedProducts = await prisma.product.findMany({
+    const whereOptions = {
+      AND: [],
+    };
+
+    if (searchTerm && searchTerm.trim() !== "") {
+      whereOptions.AND.push({
+        OR: [
+          {
+            name: {
+              contains: searchTerm.trim(),
+              mode: "insensitive",
+            },
+          },
+          {
+            description: {
+              contains: searchTerm.trim(),
+              mode: "insensitive",
+            },
+          },
+        ],
+      });
+    }
+
+    if (categoryId) {
+      whereOptions.AND.push({
+        categoryId: parseInt(categoryId),
+      });
+    }
+
+    const finalWhere = whereOptions.AND.length > 0 ? whereOptions : {};
+
+    const products = await prisma.product.findMany({
+      where: finalWhere,
       include: {
         Category: true,
         ProductImages: true,
@@ -253,16 +297,99 @@ const getSortedProducts = async (req, res) => {
       orderBy: {
         [sortBy]: order,
       },
+      take: limitNum,
+      skip: (pageNum - 1) * limitNum,
     });
 
     res.status(200).json({
-      products: sortedProducts,
+      products,
     });
   } catch (error) {
-    console.error("Get sorted products error:", error);
+    console.error("Get products with options error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
+// // Get filtered products by search input
+// const getFilteredProducts = async (req, res) => {
+//   try {
+//     const searchTerm = req.query.input;
+
+//     if (!searchTerm || searchTerm.trim() === "") {
+//       return res.status(400).json({ error: "Search term is required" });
+//     }
+
+//     const filteredProducts = await prisma.product.findMany({
+//       include: {
+//         Category: true,
+//         ProductImages: true,
+//       },
+//       where: {
+//         OR: [
+//           {
+//             name: {
+//               contains: searchTerm,
+//               mode: "insensitive",
+//             },
+//           },
+//           {
+//             description: {
+//               contains: searchTerm,
+//               mode: "insensitive",
+//             },
+//           },
+//         ],
+//       },
+//     });
+
+//     res.status(200).json({ filteredProducts });
+//   } catch (error) {
+//     console.error("Get filtered products error:", error);
+//     res.status(500).json({ error: "Internal server error" });
+//   }
+// };
+
+// // Get sorted products
+// const getSortedProducts = async (req, res) => {
+//   try {
+//     const { sortBy = "createdAt", order = "desc" } = req.query;
+
+//     // Validate sortBy parameter
+//     const validSortFields = ["name", "price", "createdAt", "stock"];
+//     if (!validSortFields.includes(sortBy)) {
+//       return res.status(400).json({
+//         error: `Invalid sortBy field. Valid options: ${validSortFields.join(
+//           ", "
+//         )}`,
+//       });
+//     }
+
+//     // Validate order parameter
+//     const validOrders = ["asc", "desc"];
+//     if (!validOrders.includes(order)) {
+//       return res.status(400).json({
+//         error: `Invalid order. Valid options: ${validOrders.join(", ")}`,
+//       });
+//     }
+
+//     const sortedProducts = await prisma.product.findMany({
+//       include: {
+//         Category: true,
+//         ProductImages: true,
+//       },
+//       orderBy: {
+//         [sortBy]: order,
+//       },
+//     });
+
+//     res.status(200).json({
+//       products: sortedProducts,
+//     });
+//   } catch (error) {
+//     console.error("Get sorted products error:", error);
+//     res.status(500).json({ error: "Internal server error" });
+//   }
+// };
 
 // Get all products
 const getAllProducts = async (req, res) => {
@@ -344,48 +471,110 @@ const updateProductById = (req, res) => {
 };
 
 // Delete a product by ID
-const deleteProductById = (req, res) => {
-  const id = req.params.id;
-  prisma.product
-    .delete({
+const deleteProductById = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+
+    // Check if product exists and get its images
+    const existingProduct = await prisma.product.findUnique({
       where: { id: id },
-    })
-    .then((result) => {
-      if (!result) {
-        return res
-          .status(400)
-          .json({ error: "product with given id doesn't exist" });
-      }
-      res.send(result);
-    })
-    .catch((err) => {
-      console.log(err);
+      include: { ProductImages: true },
     });
+
+    if (!existingProduct) {
+      return res
+        .status(404)
+        .json({ error: "Product with given ID doesn't exist" });
+    }
+
+    // Delete images from Cloudinary
+    for (const image of existingProduct.ProductImages) {
+      try {
+        const publicId = extractPublicIdFromUrl(image.url);
+        if (publicId) {
+          await deleteFile(publicId);
+          console.log(`Deleted image from Cloudinary: ${publicId}`);
+        }
+      } catch (cloudinaryError) {
+        console.error(
+          `Error deleting image ${image.id} from Cloudinary:`,
+          cloudinaryError
+        );
+        // Continue with deletion even if some images fail to delete from Cloudinary
+      }
+    }
+
+    // Delete product (this will cascade delete ProductImages due to foreign key constraints)
+    const deletedProduct = await prisma.product.delete({
+      where: { id: id },
+    });
+
+    res.status(200).json({
+      message: "Product and associated images deleted successfully",
+      product: deletedProduct,
+    });
+  } catch (error) {
+    console.error("Delete product error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
 };
 
 // Add images to existing product
 const addProductImages = async (req, res) => {
   try {
     const { productId } = req.params;
-    const { images } = req.body;
+    const files = req.files || [];
 
-    if (!images || !Array.isArray(images) || images.length === 0) {
-      return res.status(400).json({ error: "Images array is required" });
+    if (files.length === 0) {
+      return res.status(400).json({ error: "No image files provided" });
+    }
+
+    // Limit the number of files for this specific endpoint
+    if (files.length > 3) {
+      return res.status(400).json({
+        error: `Maximum 3 images allowed per request. You sent ${files.length} files.`,
+      });
     }
 
     // Check if product exists
     const product = await prisma.product.findUnique({
       where: { id: parseInt(productId) },
+      include: { ProductImages: true },
     });
 
     if (!product) {
       return res.status(404).json({ error: "Product not found" });
     }
 
+    // Check if adding these images would exceed reasonable limit (e.g., 10 images total)
+    const currentImageCount = product.ProductImages.length;
+    const maxImages = 10;
+
+    if (currentImageCount + files.length > maxImages) {
+      return res.status(400).json({
+        error: `Maximum ${maxImages} images allowed per product. Current: ${currentImageCount}, Attempting to add: ${files.length}`,
+      });
+    }
+
+    // Upload images to Google Drive
+    let uploadedImageUrls = [];
+    try {
+      uploadedImageUrls = await uploadMultipleFiles(files);
+      console.log(
+        `Uploaded ${uploadedImageUrls.length} images for product ${productId}`
+      );
+    } catch (uploadError) {
+      console.error("Error uploading images:", uploadError);
+      return res.status(500).json({
+        error: "Failed to upload images. Please try again later.",
+        details: uploadError.message,
+      });
+    }
+
     // Create image records
-    const imageData = images.map((imageUrl) => ({
+    const imageData = uploadedImageUrls.map((url) => ({
       productId: parseInt(productId),
-      url: imageUrl,
+      url: url,
     }));
 
     const newImages = await prisma.productImage.createMany({
@@ -404,6 +593,7 @@ const addProductImages = async (req, res) => {
     res.status(201).json({
       message: `${newImages.count} images added successfully`,
       product: updatedProduct,
+      uploadedImageUrls: uploadedImageUrls,
     });
   } catch (error) {
     console.error("Add product images error:", error);
@@ -424,6 +614,20 @@ const deleteProductImage = async (req, res) => {
       return res.status(404).json({ error: "Image not found" });
     }
 
+    // Extract public_id from Cloudinary URL and delete from Cloudinary
+    try {
+      const publicId = extractPublicIdFromUrl(image.url);
+      console.log(`Deleting image from Cloudinary: ${publicId}`);
+      if (publicId) {
+        await deleteFile(publicId);
+        console.log(`Deleted image from Cloudinary: ${publicId}`);
+      }
+    } catch (cloudinaryError) {
+      console.error("Error deleting from Cloudinary:", cloudinaryError);
+      // Continue with database deletion even if Cloudinary deletion fails
+    }
+
+    // Delete from database
     await prisma.productImage.delete({
       where: { id: imageId },
     });
@@ -471,9 +675,7 @@ const getProductImages = async (req, res) => {
 module.exports = {
   createProduct,
   createGroupOfProducts,
-  getProductByPage,
-  getFilteredProducts,
-  getSortedProducts,
+  getProductsWithOptions,
   getAllProducts,
   getProductById,
   updateProductById,

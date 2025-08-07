@@ -37,16 +37,9 @@ const getAddressByUserId = (req, res) => {
 const getAddressById = async (req, res) => {
   const id = req.params.id;
 
-  if (isNaN(id)) {
-    return res.status(400).json({ error: "Invalid address ID" });
-  }
-
   prisma.address
     .findUnique({
       where: { id: id },
-      include: {
-        Product: true, // Include related products
-      },
     })
     .then((result) => {
       if (!result) {
@@ -65,10 +58,6 @@ const getAddressById = async (req, res) => {
 // Update a address by ID
 const updateAddressById = (req, res) => {
   const id = req.params.id;
-
-  if (isNaN(id)) {
-    return res.status(400).json({ error: "Invalid address ID" });
-  }
 
   prisma.address
     .findUnique({
@@ -103,10 +92,6 @@ const updateAddressById = (req, res) => {
 // Delete a address by ID
 const deleteAddressById = (req, res) => {
   const id = req.params.id;
-
-  if (isNaN(id)) {
-    return res.status(400).json({ error: "Invalid address ID" });
-  }
 
   prisma.address
     .delete({

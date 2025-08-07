@@ -60,6 +60,7 @@ model Address {
   state        String
   zip          String
   User         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Orders       Order[]
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
@@ -115,7 +116,9 @@ model Order {
   userId      String
   totalAmount Float
   status      OrderStatus @default(PENDING)
+  addressId   String?
   User        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Address     Address?    @relation(fields: [addressId], references: [id], onDelete: SetNull)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   OrderItem   OrderItem[]

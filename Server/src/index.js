@@ -18,12 +18,18 @@ const user = require("./routes/user");
 const product = require("./routes/product");
 const category = require("./routes/category");
 const cart = require("./routes/cart");
+const address = require("./routes/address");
+const wishlist = require("./routes/wishlist");
+const order = require("./routes/order");
 
 // Use routes
 app.use("/api/user", user);
 app.use("/api/product", product);
 app.use("/api/category", category);
 app.use("/api/cart", cart);
+app.use("/api/address", address);
+app.use("/api/wishlist", wishlist);
+app.use("/api/order", order);
 
 // Default route
 app.get("/", (req, res) => {

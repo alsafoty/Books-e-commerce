@@ -1,5 +1,5 @@
 const { PrismaClient } = require("../../generated/prisma/client");
-
+const bcrypt = require("bcryptjs");
 const prisma = new PrismaClient();
 
 const verifyOTP = async (req, res, next) => {
@@ -12,8 +12,11 @@ const verifyOTP = async (req, res, next) => {
   if (!user) return res.status(400).send("User not found");
 
   const token = user.passwordResetToken;
-  if (!token || token !== req.body.otp)
-    return res.status(400).send("Invalid OTP or expired");
+
+  if (!token) return res.status(400).send("Invalid OTP or expired");
+
+  const isValid = bcrypt.compareSync(req.body.otp, token);
+  if (!isValid) return res.status(400).send("Invalid OTP or expired");
 
   const expiration = user.passwordResetAt;
   if (Date.now() >= expiration.getTime()) {
