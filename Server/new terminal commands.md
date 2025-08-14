@@ -43,3 +43,22 @@ generator client {
 provider = "prisma-client-js"
 binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
+
+!! be careful: mailsender service:
+
+Convert your code to use async/await instead of the callback:
+instead of :
+
+const nodemailer = require("nodemailer");
+
+    await transporter.sendMail({
+
+...
+});
+
+    do:
+
+        const info = await transporter.sendMail({
+
+...
+});
