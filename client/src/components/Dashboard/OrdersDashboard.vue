@@ -623,9 +623,7 @@ const handleViewOrder = async (order) => {
         Authorization: `${token}`,
       },
     })
-    .then((response) =>
-      console.log("Order details:", (viewingOrder.value = response.data.order))
-    )
+    .then((response) => (viewingOrder.value = response.data.order))
     .catch((error) => {
       console.error("Error fetching order details:", error);
       showMessage("خطأ في تحميل تفاصيل الطلب", "danger");

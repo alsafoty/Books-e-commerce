@@ -5,16 +5,14 @@ const prisma = new PrismaClient();
 
 const stripeCheckout = async (req, res) => {
   const { items, orderId } = req.body;
-  console.log("Items for checkout: Here");
+
   if (orderId && !items) {
     try {
-      console.log("order here id:", orderId);
       const fetchingOrder = await prisma.order.findUnique({
         where: { id: orderId },
       });
 
       if (fetchingOrder.sessionId) {
-        console.log("Session already exists for order:", orderId);
         const session = await Stripe.checkout.sessions.retrieve(
           fetchingOrder.sessionId
         );

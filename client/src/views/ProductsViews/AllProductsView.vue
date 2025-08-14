@@ -591,7 +591,6 @@ const getProductsCount = async () => {
       )
       .then((res) => {
         totalProducts.value = res.data.totalCount;
-        console.log("Total Products:", res.data.totalCount);
       });
   } catch (error) {
     console.error("Error fetching products count:", error);

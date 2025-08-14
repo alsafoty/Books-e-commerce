@@ -277,7 +277,6 @@ const getProductImage = (product) => {
   return "/placeholder-image.jpg";
 };
 const changePage = (page) => {
-  console.log(totalProducts.value);
   if (
     page < 1 ||
     page > Math.ceil(totalProducts.value / productsPerPage.value)

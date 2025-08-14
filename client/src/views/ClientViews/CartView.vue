@@ -340,9 +340,7 @@ const userId = ref(
 
 document.title = "متجر الكتب | سلة التسوق";
 
-const selectAddress = () => {
-  console.log("Selected address ID:", selectedAddress.value);
-};
+const selectAddress = () => {};
 
 // Get addresses for user
 const fetchAddresses = async () => {
@@ -391,7 +389,6 @@ const fetchCart = async () => {
     if (response.data && response.data.cart) {
       cartData.value = response.data.cart;
       cartItems.value = response.data.cart.CartItem || [];
-      console.log(cartItems.value);
     } else {
       // Cart doesn't exist, create one
       await createCart();
@@ -597,7 +594,6 @@ const checkout = async () => {
         : "https://res.cloudinary.com/dihjdsjrg/image/upload/v1755029330/ecommerce/products/Image_1755029329331_S.png",
     }));
 
-    console.log(items);
     const response = await axios.post(
       `${process.env.VUE_APP_API_BASE_URL}/order/checkout`,
       {
@@ -611,7 +607,6 @@ const checkout = async () => {
         },
       }
     );
-    console.log(response.data);
 
     if (response.data && response.data.id) {
       // Redirect to Stripe checkout

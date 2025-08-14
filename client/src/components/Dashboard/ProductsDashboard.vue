@@ -478,7 +478,7 @@ const addProduct = async () => {
 const updateProduct = async () => {
   try {
     loading.value = true;
-    console.log("Updating product:", editingProduct.value);
+
     if (newImages.value.length > 0) {
       const formData = new FormData();
       newImages.value.forEach((image) => {

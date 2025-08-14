@@ -9,10 +9,6 @@ const createOrder = async (req, res) => {
   try {
     const { userId, addressId, sessionId } = req.body;
 
-    console.log("Creating order for user:", userId);
-    console.log("Address ID:", addressId);
-    console.log("Session ID:", sessionId);
-
     if (!addressId) {
       return res.status(400).json({ error: "Address ID is required" });
     }

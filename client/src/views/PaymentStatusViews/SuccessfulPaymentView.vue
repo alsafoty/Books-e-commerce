@@ -253,7 +253,6 @@ const getOrderDetails = async () => {
         totalAmount: 0,
       };
     }
-    console.log("Order Details:", orderDetails.value);
   } catch (error) {
     console.error("Error fetching order details:", error);
     // Still show success page even if we can't fetch order details

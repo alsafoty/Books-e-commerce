@@ -661,7 +661,6 @@ const formatDate = (dateString) => {
 };
 
 const getProductImage = (product) => {
-  console.log(selectedOrder.value);
   if (product && product.ProductImages && product.ProductImages.length > 0) {
     return product.ProductImages[0].url;
   }

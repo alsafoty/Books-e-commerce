@@ -97,7 +97,7 @@ const deleteBanner = async (req, res) => {
 
     // Delete image from Cloudinary
     const publicId = await extractPublicIdFromUrl(banner.url);
-    console.log(publicId);
+
     await deleteFile(publicId);
 
     // Delete banner from database
