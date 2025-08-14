@@ -5,7 +5,7 @@ const prisma = new PrismaClient();
 const verifyOTP = async (req, res, next) => {
   const user = await prisma.user.findUnique({
     where: {
-      id: req.params.userId,
+      email: req.body.email,
     },
   });
 
@@ -22,7 +22,7 @@ const verifyOTP = async (req, res, next) => {
   if (Date.now() >= expiration.getTime()) {
     await prisma.user.update({
       where: {
-        id: user.id,
+        email: req.body.email,
       },
       data: {
         passwordResetToken: null,

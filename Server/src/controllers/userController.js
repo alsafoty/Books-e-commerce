@@ -81,7 +81,19 @@ const loginUser = async (req, res) => {
     const token = jwt.sign({ userId: user.id }, "secret", {
       expiresIn: "7d",
     });
-    res.status(200).json({ token: token, role: user.role, id: user.id });
+    res.status(200).json({
+      token: token,
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        mobile: user.mobile,
+        createdAt: user.createdAt,
+      },
+    });
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
   }
@@ -220,7 +232,7 @@ const otpVerify = async (req, res) => {
   try {
     await prisma.user.update({
       where: {
-        id: req.params.userId,
+        email: req.body.email,
       },
       data: {
         passwordResetable: true,
@@ -238,7 +250,7 @@ const passwordResetConfirm = async (req, res) => {
     const hashedPassword = bcrypt.hashSync(req.body.password, 10);
     await prisma.user.update({
       where: {
-        id: req.params.userId,
+        email: req.body.email,
       },
       data: {
         password: hashedPassword,

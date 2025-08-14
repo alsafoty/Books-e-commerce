@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { verifyToken } = require("../middleware/auth");
+const { roleCheck } = require("../middleware/RBAC");
 
 const {
   createAddress,
@@ -16,10 +17,10 @@ router.use(express.json());
 router.post("/", verifyToken, createAddress);
 
 // Get a Address by ID
-router.get("/:id", getAddressById);
+router.get("/:id", verifyToken, getAddressById);
 
 // Get a Address by userID
-router.get("/user/:id", getAddressByUserId);
+router.get("/user/:id", verifyToken, getAddressByUserId);
 
 // Update a Address by ID
 router.put("/:id", verifyToken, updateAddressById);

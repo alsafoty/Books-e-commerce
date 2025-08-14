@@ -5,7 +5,7 @@ const prisma = new PrismaClient();
 const verifyPass = async (req, res, next) => {
   const user = await prisma.user.findUnique({
     where: {
-      id: req.params.userId,
+      email: req.body.email,
     },
   });
 
@@ -26,7 +26,7 @@ const verifyPass = async (req, res, next) => {
   if (Date.now() >= expiration.getTime()) {
     await prisma.user.update({
       where: {
-        id: user.id,
+        email: user.email,
       },
       data: {
         passwordResetToken: null,

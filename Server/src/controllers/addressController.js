@@ -20,6 +20,7 @@ const createAddress = async (req, res) => {
 const getAddressByUserId = (req, res) => {
   prisma.address
     .findMany({
+      where: { userId: req.user.userId },
       orderBy: {
         id: "asc",
       },

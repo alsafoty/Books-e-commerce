@@ -3,7 +3,6 @@ const { PrismaClient } = require("../../generated/prisma/client");
 const prisma = new PrismaClient();
 
 const roleCheck = async (req, res, next) => {
-  console.log("Role check middleware triggered", req);
   if (!req.user.userId) {
     return res.status(401).json({ error: "User Id is required" });
   }

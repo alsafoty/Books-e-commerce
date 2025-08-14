@@ -5,9 +5,9 @@ const cloudinary = require("cloudinary").v2;
 
 // Configure Cloudinary
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || "your-cloud-name",
-  api_key: process.env.CLOUDINARY_API_KEY || "your-api-key",
-  api_secret: process.env.CLOUDINARY_API_SECRET || "your-api-secret",
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
 // Configure multer with file validation
@@ -16,6 +16,7 @@ const upload = multer({
     fileSize: 5 * 1024 * 1024, // 5MB limit per file
     files: 10, // Maximum 10 files per request
   },
+
   fileFilter: (req, file, cb) => {
     // Check file type
     const allowedTypes = /jpeg|jpg|png|gif|webp/;
@@ -41,9 +42,7 @@ const uploadFile = async (fileObject) => {
 
     // Generate unique public_id
     const timestamp = Date.now();
-    const filename = `product_${timestamp}_${
-      fileObject.originalname.split(".")[0]
-    }`;
+    const filename = `Image_${timestamp}_${fileObject.originalname.trim()[0]}`;
 
     // Convert buffer to base64
     const base64 = `data:${

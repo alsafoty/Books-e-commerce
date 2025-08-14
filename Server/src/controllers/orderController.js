@@ -2,10 +2,16 @@ const { PrismaClient } = require("../../generated/prisma/client");
 
 const prisma = new PrismaClient();
 
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+
 // Create a new order from cart
 const createOrder = async (req, res) => {
   try {
-    const { userId, addressId } = req.body;
+    const { userId, addressId, sessionId } = req.body;
+
+    console.log("Creating order for user:", userId);
+    console.log("Address ID:", addressId);
+    console.log("Session ID:", sessionId);
 
     if (!addressId) {
       return res.status(400).json({ error: "Address ID is required" });
@@ -57,33 +63,35 @@ const createOrder = async (req, res) => {
         totalAmount: parseFloat(totalAmount.toFixed(2)),
         status: "PENDING",
         addressId: addressId || null,
+        sessionId: sessionId || null,
       },
     });
 
-    for (const item of cart.CartItem) {
-      await prisma.orderItem.create({
-        data: {
-          orderId: newOrder.id,
-          productId: item.productId,
-          quantity: item.quantity,
-          price: item.Product.price,
-        },
-      });
-
-      await prisma.product.update({
-        where: { id: item.productId },
-        data: {
-          stock: {
-            decrement: item.quantity,
+    if (newOrder) {
+      for (const item of cart.CartItem) {
+        await prisma.orderItem.create({
+          data: {
+            orderId: newOrder.id,
+            productId: item.productId,
+            quantity: item.quantity,
+            price: item.Product.price,
           },
-        },
+        });
+
+        await prisma.product.update({
+          where: { id: item.productId },
+          data: {
+            stock: {
+              decrement: item.quantity,
+            },
+          },
+        });
+      }
+
+      await prisma.cartItem.deleteMany({
+        where: { cartId: cart.id },
       });
     }
-
-    await prisma.cartItem.deleteMany({
-      where: { cartId: cart.id },
-    });
-
     const completeOrder = await prisma.order.findUnique({
       where: { id: newOrder.id },
       include: {
@@ -148,8 +156,8 @@ const getAllOrders = async (req, res) => {
 const getOrderById = async (req, res) => {
   const id = req.params.id;
 
-  prisma.order
-    .findUnique({
+  try {
+    const order = await prisma.order.findUnique({
       where: { id: id },
       include: {
         OrderItem: {
@@ -158,6 +166,7 @@ const getOrderById = async (req, res) => {
           },
         },
         Address: true,
+
         User: {
           select: {
             id: true,
@@ -167,24 +176,41 @@ const getOrderById = async (req, res) => {
           },
         },
       },
-    })
-    .then((result) => {
-      if (!result) {
-        return res
-          .status(400)
-          .json({ error: "Order with given id doesn't exist" });
-      }
-      res.send(result);
-    })
-    .catch((err) => {
-      console.log(err);
-      res.status(500).json({ error: "Internal server error" });
     });
+    if (!order) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    if (order.sessionId) {
+      const session = await stripe.checkout.sessions.retrieve(order.sessionId);
+
+      const payment_status = session.payment_status;
+
+      if (payment_status === "paid") {
+        // Update order status to PAID
+        await prisma.order.update({
+          where: { id: order.id },
+          data: { status: "CONFIRMED" },
+        });
+      }
+      res.send({
+        order,
+        payment_status: payment_status,
+      });
+    }
+
+    res.send({
+      order,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
 };
 
 // Get user's orders (authenticated user only)
 const getUserOrders = async (req, res) => {
-  const userId = req.body.userId;
+  const userId = req.user.userId;
 
   prisma.order
     .findMany({
@@ -192,7 +218,11 @@ const getUserOrders = async (req, res) => {
       include: {
         OrderItem: {
           include: {
-            Product: true,
+            Product: {
+              include: {
+                ProductImages: true,
+              },
+            },
           },
         },
         Address: true,
@@ -230,6 +260,30 @@ const getOrdersByUserId = async (req, res) => {
       console.log(err);
       res.status(500).json({ error: "Internal server error" });
     });
+};
+
+const updateOrderSession = async (req, res) => {
+  const id = req.params.id;
+  const { sessionId } = req.body;
+
+  try {
+    const order = await prisma.order.findUnique({
+      where: { id: id },
+    });
+    if (!order) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    const updatedOrder = await prisma.order.update({
+      where: { id: id },
+      data: { sessionId: sessionId },
+    });
+
+    res.send(updatedOrder);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
 };
 
 // Update order status (Admin only)
@@ -334,6 +388,7 @@ module.exports = {
   getUserOrders,
   getOrderById,
   getOrdersByUserId,
+  updateOrderSession,
   updateOrderStatus,
   deleteOrderById,
   getSuccessfulOrdersStats,

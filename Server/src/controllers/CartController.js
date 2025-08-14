@@ -20,9 +20,10 @@ const createCart = async (req, res) => {
     });
 
     if (existingCart) {
-      return res
-        .status(400)
-        .json({ error: "Cart already exists for this user" });
+      return res.status(201).json({
+        message: "Cart already exists for this user",
+        cart: existingCart,
+      });
     }
 
     const newCart = await prisma.cart.create({
@@ -121,7 +122,7 @@ const getCartById = async (req, res) => {
 // Get cart by user ID ✅
 const getCartByUserId = async (req, res) => {
   try {
-    const { userId } = req.params;
+    const userId = req.params.userId;
 
     const cart = await prisma.cart.findUnique({
       where: { userId: userId },
@@ -183,6 +184,9 @@ const addItemToCart = async (req, res) => {
   try {
     const { cartId, productId, quantity = 1 } = req.body;
 
+    if (!cartId) {
+      return res.status(400).json({ error: "Cart ID is required" });
+    }
     const cart = await prisma.cart.findUnique({
       where: { id: cartId },
     });

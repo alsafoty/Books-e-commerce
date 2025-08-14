@@ -59,6 +59,7 @@ model Address {
   city         String
   state        String
   zip          String
+  notes        String?
   User         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   Orders       Order[]
   createdAt    DateTime @default(now())
@@ -66,12 +67,13 @@ model Address {
 }
 
 model Category {
-  id          Int       @id @default(autoincrement())
-  name        String
-  description String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  Product     Product[]
+  id            Int            @id @default(autoincrement())
+  name          String
+  description   String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  CategoryImage CategoryImage?
+  Product       Product[]
 }
 
 model Product {
@@ -88,6 +90,24 @@ model Product {
   wishlist      Wishlist[]
   OrderItem     OrderItem[]
   CartItem      CartItem[]
+}
+
+model CategoryImage {
+  id         String   @id @default(uuid())
+  categoryId Int      @unique
+  url        String
+  Category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model BannerImage {
+  id        String   @id @default(uuid())
+  url       String
+  href      String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model ProductImage {
@@ -117,6 +137,7 @@ model Order {
   totalAmount Float
   status      OrderStatus @default(PENDING)
   addressId   String?
+  sessionId   String?
   User        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   Address     Address?    @relation(fields: [addressId], references: [id], onDelete: SetNull)
   createdAt   DateTime    @default(now())

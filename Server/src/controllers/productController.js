@@ -234,7 +234,7 @@ const getProductsWithOptions = async (req, res) => {
       return res.status(400).json({ error: "Invalid page number" });
     }
 
-    const allowedLimits = [16, 25, 50];
+    const allowedLimits = [16, 25, 50, 100];
     if (!allowedLimits.includes(limitNum)) {
       return res.status(400).json({
         error: `Invalid limit. Allowed values: ${allowedLimits.join(", ")}`,
@@ -288,6 +288,9 @@ const getProductsWithOptions = async (req, res) => {
 
     const finalWhere = whereOptions.AND.length > 0 ? whereOptions : {};
 
+    const productsCount = await prisma.product.count({
+      where: finalWhere,
+    });
     const products = await prisma.product.findMany({
       where: finalWhere,
       include: {
@@ -302,6 +305,7 @@ const getProductsWithOptions = async (req, res) => {
     });
 
     res.status(200).json({
+      totalCount: productsCount,
       products,
     });
   } catch (error) {
@@ -400,7 +404,7 @@ const getAllProducts = async (req, res) => {
         ProductImages: true,
       },
       orderBy: {
-        createdAt: "desc",
+        id: "desc",
       },
     });
 
@@ -439,9 +443,9 @@ const getProductById = async (req, res) => {
   }
 };
 
-// Update a product by ID
-const updateProductById = (req, res) => {
-  let id = req.params.id;
+const updateProductById = async (req, res) => {
+  let id = parseInt(req.params.id);
+
   prisma.product
     .findUnique({
       where: { id: id },
@@ -452,7 +456,7 @@ const updateProductById = (req, res) => {
           .status(400)
           .json({ error: "product with given id doesn't exist" });
       }
-      id = result.id.toString();
+      id = result.id;
       prisma.product
         .update({
           where: { id: id },
@@ -470,12 +474,20 @@ const updateProductById = (req, res) => {
     });
 };
 
-// Delete a product by ID
+const getTotalProducts = async (req, res) => {
+  try {
+    const totalProducts = await prisma.product.count();
+    res.status(200).json({ totalProducts });
+  } catch (error) {
+    console.error("Get total products error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
 const deleteProductById = async (req, res) => {
   try {
     const id = parseInt(req.params.id);
 
-    // Check if product exists and get its images
     const existingProduct = await prisma.product.findUnique({
       where: { id: id },
       include: { ProductImages: true },
@@ -487,7 +499,6 @@ const deleteProductById = async (req, res) => {
         .json({ error: "Product with given ID doesn't exist" });
     }
 
-    // Delete images from Cloudinary
     for (const image of existingProduct.ProductImages) {
       try {
         const publicId = extractPublicIdFromUrl(image.url);
@@ -500,11 +511,9 @@ const deleteProductById = async (req, res) => {
           `Error deleting image ${image.id} from Cloudinary:`,
           cloudinaryError
         );
-        // Continue with deletion even if some images fail to delete from Cloudinary
       }
     }
 
-    // Delete product (this will cascade delete ProductImages due to foreign key constraints)
     const deletedProduct = await prisma.product.delete({
       where: { id: id },
     });
@@ -514,8 +523,12 @@ const deleteProductById = async (req, res) => {
       product: deletedProduct,
     });
   } catch (error) {
-    console.error("Delete product error:", error);
-    res.status(500).json({ error: "Internal server error" });
+    console.error("Delete product error:", error.meta.constraint);
+    if (error.meta.constraint === "OrderItem_productId_fkey") {
+      res.status(400).json({ error: "Product has associated orders" });
+    } else {
+      res.status(500).json({ error: "Internal server error" });
+    }
   }
 };
 
@@ -683,4 +696,5 @@ module.exports = {
   addProductImages,
   deleteProductImage,
   getProductImages,
+  getTotalProducts,
 };

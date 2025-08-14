@@ -6,15 +6,20 @@ const {
   getUserOrders,
   getOrderById,
   getOrdersByUserId,
+  updateOrderSession,
   updateOrderStatus,
   deleteOrderById,
   getSuccessfulOrdersStats,
 } = require("../controllers/orderController");
 const { verifyToken } = require("../middleware/auth");
 const { roleCheck } = require("../middleware/RBAC");
+const stripeCheckout = require("../middleware/stripeCheckout");
 
 // Create order from cart ✅
 router.post("/", verifyToken, createOrder);
+
+// Checkout
+router.post("/checkout", verifyToken, stripeCheckout);
 
 // Get user's own orders  ✅
 router.get("/my-orders", verifyToken, getUserOrders);
@@ -29,7 +34,10 @@ router.get("/stats", verifyToken, roleCheck, getSuccessfulOrdersStats);
 router.get("/user/:userId", verifyToken, roleCheck, getOrdersByUserId);
 
 // Get order by ID ✅
-router.get("/:id", verifyToken, roleCheck, getOrderById);
+router.get("/:id", verifyToken, getOrderById);
+
+// Update order session ID
+router.put("/:id/session", verifyToken, updateOrderSession);
 
 // Update order status (Admin only) ✅
 router.put("/:id/status", verifyToken, roleCheck, updateOrderStatus);

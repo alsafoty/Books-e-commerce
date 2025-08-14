@@ -39,9 +39,12 @@ router.delete("/:id", verifyToken, deleteUserById);
 // Resetting user passowrd
 router.post("/password-reset", passwordReset);
 
-//OTP Validation
-router.post("/otp-verify/:userId", verifyOTP, otpVerify);
+// Uploading banner images (Admins Only)
+router.post("/banner", verifyToken, roleCheck);
 
-router.post("/password-reset/:userId", verifyPass, passwordResetConfirm);
+//OTP Validation
+router.post("/otp/verify", verifyOTP, otpVerify);
+
+router.post("/password-resetting", verifyPass, passwordResetConfirm);
 
 module.exports = router;

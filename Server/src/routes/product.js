@@ -15,6 +15,7 @@ const {
   addProductImages,
   deleteProductImage,
   getProductImages,
+  getTotalProducts,
 } = require("../controllers/productController");
 
 router.use(express.json());
@@ -32,13 +33,15 @@ router.post(
 );
 
 // Get all Products
-router.get("/", verifyToken, getAllProducts);
+router.get("/", getAllProducts);
+// Get total products
+router.get("/count", getTotalProducts);
 
 // Get products with pagination, filtering, and sorting
-router.get("/browse", verifyToken, getProductsWithOptions);
+router.get("/browse", getProductsWithOptions);
 
 // Get a Product by ID
-router.get("/:id", verifyToken, getProductById);
+router.get("/:id", getProductById);
 
 // Get all images for a product
 router.get("/:productId/images", verifyToken, getProductImages);
@@ -55,8 +58,8 @@ router.post(
 // Delete product image
 router.delete("/images/:imageId", verifyToken, roleCheck, deleteProductImage);
 
-// Update a Product by ID (with optional image upload)
-router.put("/:id", verifyToken, roleCheck, upload.any(), updateProductById);
+// Update a Product by ID
+router.put("/:id", verifyToken, roleCheck, updateProductById);
 
 // Delete a Product by ID
 router.delete("/:id", verifyToken, roleCheck, deleteProductById);
