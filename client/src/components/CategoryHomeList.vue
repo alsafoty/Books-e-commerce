@@ -33,28 +33,29 @@
             class="col-4 col-md-3 col-lg-2"
           >
             <!-- Category Image -->
-            <div
-              class="category-image-container position-relative overflow-hidden border-5 border-secondary"
-            >
-              <img
-                :src="category.CategoryImage?.url || 'placeholder-image.jpg'"
-                :alt="category.name"
-                class="img-fluid category-img"
-                style="width: 100%; object-fit: cover"
-              />
-
-              <!-- Overlay -->
+            <div class="d-flex justify-content-center">
               <div
-                class="overlay position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center opacity-0"
-                style="background: rgba(0, 0, 0, 0.3)"
+                class="category-image-container position-relative overflow-hidden border-5 border-secondary"
               >
-                <button
-                  @click="goToCategory(category)"
-                  class="btn btn-light btn-sm rounded-3 px-2 px-md-3 py-1 py-md-2"
-                  style="font-size: 0.7rem"
+                <img
+                  :src="category.CategoryImage?.url || 'placeholder-image.jpg'"
+                  :alt="category.name"
+                  class="category-img"
+                />
+
+                <!-- Overlay -->
+                <div
+                  class="overlay position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center opacity-0"
+                  style="background: rgba(0, 0, 0, 0.3)"
                 >
-                  <div class="fw-bold text-center">{{ category.name }}</div>
-                </button>
+                  <button
+                    @click="goToCategory(category)"
+                    class="btn btn-light btn-sm rounded-3 px-2 px-md-3 py-1 py-md-2"
+                    style="font-size: 0.7rem"
+                  >
+                    <div class="fw-bold text-center">{{ category.name }}</div>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -118,65 +119,75 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+/* Fixed size category images - 160x160px on all screens */
 .category-img {
-  height: 120px;
-}
-
-@media (min-width: 768px) {
-  .category-img {
-    height: 160px;
-  }
-}
-
-@media (min-width: 992px) {
-  .category-img {
-    height: 180px;
-  }
+  width: 160px;
+  height: 160px;
+  object-fit: cover;
+  border-radius: 50%;
 }
 
 .category-image-container {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
   transition: all 0.3s ease;
   border: 1px solid transparent;
-  border-radius: 100%;
+  overflow: hidden;
+  flex-shrink: 0; /* Prevent shrinking */
 }
 
-.category-category-image-container:hover {
+.category-image-container:hover {
   border-color: #dee2e6;
   transform: translateY(-5px);
   box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
-  border-radius: 100%;
 }
 
 .category-image-container:hover .overlay {
   opacity: 1 !important;
-  border-radius: 100%;
 }
 
 .overlay {
   background: rgba(0, 0, 0, 0.6);
   transition: opacity 0.3s ease;
-  border-radius: 100%;
-}
-
-.category-image-container {
-  border-radius: 100%;
-  overflow: hidden;
+  border-radius: 50%;
 }
 
 .empty-state-card {
   border: 1px solid #e9ecef;
-  border-radius: 100%;
+  border-radius: 50%;
 }
 
 .z-index-2 {
   z-index: 2;
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .category-image-container {
-    margin-bottom: 1rem;
-    border-radius: 100%;
+/* Responsive grid adjustments for fixed size items */
+@media (max-width: 576px) {
+  .categories-content .row {
+    justify-content: center;
+  }
+
+  .categories-content .col-4 {
+    flex: 0 0 auto;
+    width: auto;
+    margin: 0.5rem;
+  }
+}
+
+@media (min-width: 577px) and (max-width: 768px) {
+  .categories-content .col-md-3 {
+    flex: 0 0 auto;
+    width: auto;
+    margin: 0.75rem;
+  }
+}
+
+@media (min-width: 769px) {
+  .categories-content .col-lg-2 {
+    flex: 0 0 auto;
+    width: auto;
+    margin: 1rem;
   }
 }
 
@@ -194,6 +205,13 @@ onMounted(async () => {
 
 .category-image-container {
   animation: fadeIn 0.5s ease forwards;
-  border-radius: 100%;
+}
+
+/* Ensure proper spacing and alignment */
+.categories-content .row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
 }
 </style>

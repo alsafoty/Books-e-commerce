@@ -177,7 +177,7 @@
                   :src="getProductImage(product)"
                   :alt="product.name"
                   class="img-fluid"
-                  style="height: 250px; width: 100%; object-fit: cover"
+                  style="height: 200px; width: 100%; object-fit: cover"
                 />
 
                 <!-- Overlay on hover -->

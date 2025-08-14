@@ -62,7 +62,6 @@
                   :alt="product.name"
                   class="img-fluid"
                   style="height: 200px; width: 100%; object-fit: cover"
-                  :style="{ height: '350px' }"
                 />
 
                 <!-- Overlay on hover (hidden on mobile) -->

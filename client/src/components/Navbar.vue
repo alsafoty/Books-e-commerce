@@ -23,10 +23,9 @@
         <button
           class="navbar-toggler d-lg-none"
           type="button"
-          data-bs-toggle="collapse"
-          data-bs-target="#navbarContent"
+          @click="toggleNavbar"
           aria-controls="navbarContent"
-          aria-expanded="false"
+          :aria-expanded="isNavbarOpen"
           aria-label="Toggle navigation"
         >
           <span class="navbar-toggler-icon"></span>
@@ -36,10 +35,11 @@
         <div
           class="collapse navbar-collapse justify-content-between"
           id="navbarContent"
+          :class="{ show: isNavbarOpen }"
         >
           <!-- Search Form -->
           <form
-            class="d-flex mx-auto my-3 my-lg-0"
+            class="categorylist d-flex mx-auto my-3 my-lg-0"
             style="max-width: 400px; width: 100%"
           >
             <div class="input-group">
@@ -67,7 +67,7 @@
             <!-- Cart -->
             <router-link
               to="/cart"
-              class="btn btn-light text-primary d-flex flex-row flex-lg-column align-items-center fw-bold text-decoration-none"
+              class="categorylist btn btn-light text-primary d-flex flex-row flex-lg-column align-items-center fw-bold text-decoration-none"
             >
               <i class="bi bi-cart-fill fs-5 ms-2 me-lg-0"></i>
               <span class="d-lg-block">المشتريات</span>
@@ -76,7 +76,7 @@
             <!-- Wishlist -->
             <router-link
               to="/wishlist"
-              class="btn btn-light text-primary d-flex flex-row flex-lg-column align-items-center fw-bold text-decoration-none"
+              class="categorylist btn btn-light text-primary d-flex flex-row flex-lg-column align-items-center fw-bold text-decoration-none"
             >
               <i class="bi bi-heart-fill fs-5 ms-2 me-lg-0"></i>
               <span class="d-lg-block">المفضلة</span>
@@ -86,7 +86,7 @@
             <router-link
               v-if="!isLoggedIn"
               to="/login"
-              class="btn btn-light text-primary d-flex flex-row flex-lg-column align-items-center fw-bold text-decoration-none"
+              class="categorylist btn btn-light text-primary d-flex flex-row flex-lg-column align-items-center fw-bold text-decoration-none"
             >
               <i class="bi bi-box-arrow-in-right fs-5 ms-2 me-lg-0"></i>
               <span class="d-lg-block">تسجيل الدخول</span>
@@ -96,7 +96,7 @@
             <div v-else class="dropdown">
               <button
                 @click="toggleUserDropdown"
-                class="btn btn-light text-primary fw-bold d-flex flex-row flex-lg-column align-items-center"
+                class="categorylist btn btn-light text-primary fw-bold d-flex flex-row flex-lg-column align-items-center"
                 type="button"
                 :aria-expanded="isUserDropdownOpen"
                 data-bs-toggle="dropdown"
@@ -112,7 +112,7 @@
                 <li>
                   <router-link
                     to="/profile"
-                    class="dropdown-item text-primary d-flex align-items-center"
+                    class="categorylist dropdown-item text-primary d-flex align-items-center"
                   >
                     <i class="bi bi-person ms-2"></i>
                     الملف الشخصي
@@ -121,7 +121,7 @@
                 <li v-if="isAdmin">
                   <router-link
                     to="/dashboard"
-                    class="dropdown-item text-primary d-flex align-items-center"
+                    class="categorylist dropdown-item text-primary d-flex align-items-center"
                   >
                     <i class="bi bi-gear ms-2"></i>
                     لوحة التحكم
@@ -130,7 +130,7 @@
                 <li>
                   <router-link
                     to="/orders"
-                    class="dropdown-item text-primary d-flex align-items-center"
+                    class="categorylist dropdown-item text-primary d-flex align-items-center"
                   >
                     <i class="bi bi-bag ms-2"></i>
                     طلباتي
@@ -140,7 +140,7 @@
                 <li>
                   <button
                     @click="logout"
-                    class="dropdown-item text-primary d-flex align-items-center w-100 border-0 bg-transparent"
+                    class="categorylist dropdown-item text-primary d-flex align-items-center w-100 border-0 bg-transparent"
                   >
                     <i class="bi bi-box-arrow-right ms-2"></i>
                     تسجيل الخروج
@@ -194,23 +194,29 @@
           <button
             class="navbar-toggler w-100 border-0"
             type="button"
-            data-bs-toggle="collapse"
-            data-bs-target="#categoriesMenu"
+            @click="toggleCategoriesMenu"
             aria-controls="categoriesMenu"
-            aria-expanded="false"
+            :aria-expanded="isCategoriesMenuOpen"
             aria-label="Toggle categories"
           >
             <span class="text-light fw-bold">الفئات</span>
-            <i class="bi bi-chevron-down text-light ms-2"></i>
+            <i
+              class="bi bi-chevron-down text-light ms-2"
+              :class="{ 'rotate-180': isCategoriesMenuOpen }"
+            ></i>
           </button>
-          <div class="collapse" id="categoriesMenu">
+          <div
+            class="collapse"
+            id="categoriesMenu"
+            :class="{ show: isCategoriesMenuOpen }"
+          >
             <div class="d-flex flex-column gap-2 py-3">
               <div
                 v-for="category in categories.slice(0, 5)"
                 :key="category.id"
               >
                 <router-link
-                  class="btn btn-outline-light w-100 text-start fw-bold text-decoration-none"
+                  class="categorylist btn btn-outline-light w-100 text-end fw-bold text-decoration-none"
                   :to="`/category/${category.id}`"
                 >
                   {{ category.name }}
@@ -218,7 +224,7 @@
               </div>
               <div v-if="categories.length > 5">
                 <router-link
-                  class="btn btn-outline-light w-100 text-start fw-bold text-decoration-none"
+                  class="categorylist btn btn-outline-light w-100 text-end fw-bold text-decoration-none"
                   to="/categories"
                 >
                   عرض المزيد
@@ -240,7 +246,9 @@ import { useRouter } from "vue-router";
 const router = useRouter();
 const categories = ref([]);
 const isUserDropdownOpen = ref(false);
-const isMoreDropdownOpen = ref(false); // Added for "المزيد" dropdown
+const isMoreDropdownOpen = ref(false);
+const isNavbarOpen = ref(false);
+const isCategoriesMenuOpen = ref(false);
 const userInfo = ref({});
 
 const isAdmin = computed(() => {
@@ -289,20 +297,33 @@ const closeUserDropdown = () => {
   isUserDropdownOpen.value = false;
 };
 
+// Toggle functions for navbar and categories menu
+const toggleNavbar = () => {
+  isNavbarOpen.value = !isNavbarOpen.value;
+};
+
+const toggleCategoriesMenu = () => {
+  isCategoriesMenuOpen.value = !isCategoriesMenuOpen.value;
+};
+
 // Added functions for "المزيد" dropdown
 const toggleMoreDropdown = () => {
   router.push("/categories");
 };
 
-const closeMoreDropdown = () => {
-  isMoreDropdownOpen.value = false;
-};
-
 const handleClickOutside = (event) => {
   const dropdown = event.target.closest(".dropdown");
+  const navbar = event.target.closest(".navbar");
+
   if (!dropdown) {
     isUserDropdownOpen.value = false;
-    isMoreDropdownOpen.value = false; // Close both dropdowns
+    isMoreDropdownOpen.value = false;
+  }
+
+  // Close navbar and categories menu when clicking outside
+  if (!navbar) {
+    isNavbarOpen.value = false;
+    isCategoriesMenuOpen.value = false;
   }
 };
 
@@ -333,3 +354,24 @@ onUnmounted(() => {
   document.removeEventListener("click", handleClickOutside);
 });
 </script>
+
+<style>
+.categorylist {
+  animation: listmotion 0.5s ease forwards;
+}
+
+@keyframes listmotion {
+  0% {
+    transform: translateX(-10px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.categoriesMenu {
+  animation: listmotion 0.5s ease forwards;
+}
+</style>
