@@ -610,21 +610,21 @@ const checkout = async () => {
 
     if (response.data && response.data.id) {
       // Redirect to Stripe checkout
+      await axios.put(
+        `${process.env.VUE_APP_API_BASE_URL}/order/${createdOrder.data.order.id}/session`,
+        { sessionId: response.data.id },
+        {
+          headers: {
+            Authorization: `${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
       window.location.href = response.data.url;
     } else {
       showMessage("حدث خطأ في إتمام عملية الشراء", "danger");
     }
 
-    await axios.put(
-      `${process.env.VUE_APP_API_BASE_URL}/order/${createdOrder.data.order.id}/session`,
-      { sessionId: response.data.id },
-      {
-        headers: {
-          Authorization: `${token}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
     loadingCheckout.value = false;
   } catch (error) {
     console.error("Error during checkout:", error);
