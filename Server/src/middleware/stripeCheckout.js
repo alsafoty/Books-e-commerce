@@ -1,5 +1,5 @@
 const Stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
-const { PrismaClient } = require("../../generated/prisma/client");
+const { PrismaClient } = require("@prisma/client");
 
 const prisma = new PrismaClient();
 

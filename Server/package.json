@@ -24,10 +24,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon .",
-    "postinstall": "npx prisma generate",
-    "build": "npx prisma generate && next build"
-    
-
+    "postinstall": "prisma generate"
   },
   "keywords": [],
   "author": "",

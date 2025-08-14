@@ -3,7 +3,7 @@ const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const validator = require("validator");
 const sendEmail = require("../middleware/sendEmail");
-const { PrismaClient } = require("../../generated/prisma/client");
+const { PrismaClient } = require("@prisma/client");
 
 const prisma = new PrismaClient();
 

@@ -167,5 +167,5 @@ Use server's test files: `test-image-upload.js` and `test-add-images.js` for val
 - Frontend uses port 8080, backend uses 3000 (update API calls accordingly)
 - Image URLs use `.url` property, not `.imageUrl`
 - User ID extraction from localStorage requires parsing "userInfo" object
-- Prisma client imports from `../../generated/prisma/client`
+- Prisma client imports from `@prisma/client`
 - All protected routes require `verifyToken` middleware on backend

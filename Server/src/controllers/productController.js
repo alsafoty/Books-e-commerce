@@ -1,5 +1,5 @@
 const { parse } = require("path");
-const { PrismaClient } = require("../../generated/prisma/client");
+const { PrismaClient } = require("@prisma/client");
 const {
   uploadMultipleFiles,
   deleteFile,
