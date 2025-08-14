@@ -42,8 +42,8 @@ const stripeCheckout = async (req, res) => {
           quantity: item.quantity,
         })),
         mode: "payment",
-        success_url: `http://localhost:8080/#/successful?orderId=${orderId}`,
-        cancel_url: `http://localhost:8080/#/cancelled`,
+        success_url: `https://books-store-demo.vercel.app/#/successful?orderId=${orderId}`,
+        cancel_url: `https://books-store-demo.vercel.app/#/cancelled`,
         metadata: {
           userId: req.user.userId, // Assuming user ID is available in req.user
           orderId: orderId,
