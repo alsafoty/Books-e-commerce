@@ -23,7 +23,10 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon ."
+    "dev": "nodemon .",
+    "postinstall": "prisma generate",
+    "vercel-build": "prisma generate && next build"
+    
 
   },
   "keywords": [],
