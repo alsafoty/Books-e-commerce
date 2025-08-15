@@ -3,10 +3,10 @@ const nodemailer = require("nodemailer");
 const sendEmail = async (email, subject, text) => {
   try {
     const transporter = nodemailer.createTransport({
-      host: process.env.HOST,
+      // host: process.env.HOST,
       service: process.env.SERVICE,
-      port: 587,
-      secure: false, // false for 587, true for 465
+      // port: 587,
+      // secure: false, // false for 587, true for 465
       auth: {
         user: process.env.USER,
         pass: process.env.PASS,
