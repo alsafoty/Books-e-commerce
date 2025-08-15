@@ -205,7 +205,7 @@ const passwordReset = async (req, res) => {
 
     const otp = `${token}`;
     try {
-      sendEmail(user.email, "Password reset", otp);
+      await sendEmail(user.email, "Password reset", otp);
     } catch (error) {
       return res.send("An error occured");
     }
