@@ -3,18 +3,17 @@ const nodemailer = require("nodemailer");
 const sendEmail = async (email, subject, text) => {
   try {
     const transporter = nodemailer.createTransport({
-      // host: process.env.HOST,
-      service: process.env.SERVICE,
-      // port: 587,
-      // secure: false, // false for 587, true for 465
+      host: "smtp-relay.brevo.com",
+      port: 587, // or 587
+      secure: false, // true for port 465, false for 587
       auth: {
-        user: process.env.USER,
-        pass: process.env.PASS,
+        user: process.env.BREVO_SMTP_USER,
+        pass: process.env.BREVO_SMTP_PASS,
       },
     });
 
     const info = await transporter.sendMail({
-      from: `"E-Commerce" <${process.env.USER}>`,
+      from: `"Book store" <computereng021@gmail.com>`,
       to: email,
       subject: subject,
       text: `Your OTP is: ${text}`,
@@ -30,7 +29,7 @@ const sendEmail = async (email, subject, text) => {
       `,
     });
 
-    console.log("Email sent successfully:", info.response);
+    console.log(info.response);
     return info;
   } catch (error) {
     console.error("Email not sent:", error);
